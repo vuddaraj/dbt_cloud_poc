@@ -1,0 +1,53 @@
+# .github/workflows/refresh_seeds.yml
+name: Refresh dbt seeds (customers)
+
+on:
+  workflow_dispatch: {}          # manual run button
+  schedule:
+    - cron: "*/2 * * * *"          # monthly at 05:00 UTC — change if you want
+
+# allow this job to push back to the repo
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # keeps history so commits/pushes work
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'    # or 3.10 if you prefer
+
+      - name: Install Python deps
+        run: pip install requests pandas
+
+      - name: Generate customers.csv
+        env:
+          # ✅ REQUIRED: point this at the API you’re using
+          API_URL: https://jsonplaceholder.typicode.com/users
+          # ✅ OPTIONAL: if your API needs a key/token, add it as a GitHub Secret first
+          API_KEY: ${{ secrets.API_KEY }}
+          # OPTIONAL: override where the script writes the file
+          OUTPUT_DIR: seeds
+          OUTPUT_FILE: customers.csv
+        run: python scripts/refresh_seeds.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add seeds/customers.csv
+          # only commit when there are diffs, otherwise do nothing
+          git diff --cached --quiet || git commit -m "chore: refresh customers seed"
+
+      - name: Push (to your default branch)
+        # 🔁 change 'main' if your default branch is named differently
+        if: github.ref_name == 'main'
+        run: git push
