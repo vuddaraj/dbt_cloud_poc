@@ -4,7 +4,7 @@ name: Refresh dbt seeds (customers)
 on:
   workflow_dispatch: {}          # manual run button
   schedule:
-    - cron: "0 * * * *"          # monthly at 05:00 UTC — change if you want
+    - cron: "0 5 1 * *"          # monthly at 05:00 UTC — change if you want
 
 # allow this job to push back to the repo
 permissions:
@@ -52,3 +52,4 @@ jobs:
         if: github.ref_name == 'main'
 
         run: git push
+
